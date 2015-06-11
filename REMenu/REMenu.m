@@ -57,7 +57,6 @@
         _closeOnSelection = YES;
         _itemHeight = 48.0;
         _separatorHeight = 2.0;
-        _separatorOffset = CGSizeMake(0.0, 0.0);
         _waitUntilAnimationIsComplete = YES;
         
         _textOffset = CGSizeMake(0, 0);
@@ -89,10 +88,9 @@
         
         _borderWidth = 1.0;
         _borderColor =  [UIColor colorWithRed:28/255.0 green:28/255.0 blue:27/255.0 alpha:1.0];
-        _animationDuration = 0.3;
-        _closeAnimationDuration = 0.2;
+        _animationDuration = 0.2;
         _bounce = YES;
-        _bounceAnimationDuration = 0.2;
+        _bounceAnimationDuration = 0.15;
         
         _appearsBehindNavigationBar = REUIKitIsFlatMode() ? YES : NO;
     }
@@ -122,7 +120,7 @@
     self.containerView = ({
         REMenuContainerView *view = [[REMenuContainerView alloc] init];
         view.clipsToBounds = YES;
-        view.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+        view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         
         if (self.backgroundView) {
             self.backgroundView.alpha = 0;
@@ -195,9 +193,9 @@
         if (index == self.items.count - 1)
             itemHeight += self.cornerRadius;
         
-        UIView *separatorView = [[UIView alloc] initWithFrame:CGRectMake(self.separatorOffset.width,
-                                                                         index * self.itemHeight + index * self.separatorHeight + 40.0 + navigationBarOffset + self.separatorOffset.height,
-                                                                         rect.size.width - self.separatorOffset.width,
+        UIView *separatorView = [[UIView alloc] initWithFrame:CGRectMake(0,
+                                                                         index * self.itemHeight + index * self.separatorHeight + 40.0 + navigationBarOffset,
+                                                                         rect.size.width,
                                                                          self.separatorHeight)];
         separatorView.backgroundColor = self.separatorColor;
         separatorView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
@@ -240,10 +238,6 @@
     [self.containerView addSubview:self.menuWrapperView];
     [view addSubview:self.containerView];
     
-    if ([self.delegate respondsToSelector:@selector(willOpenMenu:)]) {
-        [self.delegate willOpenMenu:self];
-    }
-    
     // Animate appearance
     //
     if (self.bounce) {
@@ -251,9 +245,9 @@
         if ([UIView respondsToSelector:@selector(animateWithDuration:delay:usingSpringWithDamping:initialSpringVelocity:options:animations:completion:)]) {
             [UIView animateWithDuration:self.animationDuration+self.bounceAnimationDuration
                                   delay:0.0
-                 usingSpringWithDamping:0.6
-                  initialSpringVelocity:4.0
-                                options:UIViewAnimationOptionBeginFromCurrentState|UIViewAnimationOptionCurveEaseInOut
+                 usingSpringWithDamping:5
+                  initialSpringVelocity:15
+                                options:UIViewAnimationOptionBeginFromCurrentState|UIViewAnimationOptionCurveEaseOut
                              animations:^{
                  self.backgroundView.alpha = self.backgroundAlpha;
                  CGRect frame = self.menuView.frame;
@@ -261,9 +255,6 @@
                  self.menuWrapperView.frame = frame;
              } completion:^(BOOL finished) {
                  self.isAnimating = NO;
-                 if ([self.delegate respondsToSelector:@selector(didOpenMenu:)]) {
-                     [self.delegate didOpenMenu:self];
-                 }
              }];
         } else {
             [UIView animateWithDuration:self.animationDuration
@@ -276,16 +267,15 @@
                  self.menuWrapperView.frame = frame;
              } completion:^(BOOL finished) {
                  self.isAnimating = NO;
-                 if ([self.delegate respondsToSelector:@selector(didOpenMenu:)]) {
-                     [self.delegate didOpenMenu:self];
-                 }
              }];
 
         }
     } else {
         [UIView animateWithDuration:self.animationDuration
                               delay:0.0
-                            options:UIViewAnimationOptionBeginFromCurrentState|UIViewAnimationOptionCurveEaseInOut
+             usingSpringWithDamping:5
+              initialSpringVelocity:15
+                            options:UIViewAnimationOptionBeginFromCurrentState|UIViewAnimationOptionCurveEaseOut
                          animations:^{
             self.backgroundView.alpha = self.backgroundAlpha;
             CGRect frame = self.menuView.frame;
@@ -293,9 +283,6 @@
             self.menuWrapperView.frame = frame;
         } completion:^(BOOL finished) {
             self.isAnimating = NO;
-            if ([self.delegate respondsToSelector:@selector(didOpenMenu:)]) {
-                [self.delegate didOpenMenu:self];
-            }
         }];
     }
 }
@@ -329,9 +316,11 @@
     CGFloat navigationBarOffset = self.appearsBehindNavigationBar && self.navigationBar ? 64 : 0;
     
     void (^closeMenu)(void) = ^{
-        [UIView animateWithDuration:self.closeAnimationDuration
+        [UIView animateWithDuration:self.animationDuration
                               delay:0.0
-                            options:UIViewAnimationOptionBeginFromCurrentState|UIViewAnimationOptionCurveEaseInOut
+             usingSpringWithDamping:1
+              initialSpringVelocity:1
+                            options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionCurveEaseOut
                          animations:^ {
             CGRect frame = self.menuView.frame;
             frame.origin.y = - self.combinedHeight - navigationBarOffset;
@@ -354,18 +343,12 @@
             if (self.closeCompletionHandler) {
                 self.closeCompletionHandler();
             }
-            if ([self.delegate respondsToSelector:@selector(didCloseMenu:)]) {
-                [self.delegate didCloseMenu:self];
-            }
         }];
         
     };
     
     if (self.closePreparationBlock) {
         self.closePreparationBlock();
-    }
-    if ([self.delegate respondsToSelector:@selector(willCloseMenu:)]) {
-        [self.delegate willCloseMenu:self];
     }
     
     if (self.bounce) {

@@ -47,6 +47,8 @@
         _backgroundView = ({
             UIView *view = [[UIView alloc] initWithFrame:self.bounds];
             view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            if (menu.liveBlur && REUIKitIsFlatMode())
+                view.alpha = 0.5f;
             view;
         });
         [self addSubview:_backgroundView];
@@ -122,10 +124,6 @@
         self.imageView.tintColor = self.menu.imageTintColor;
     }
     
-    if ([self.imageView respondsToSelector:@selector(setBackgroundColor:)]) {
-        self.imageView.backgroundColor = self.item.imageBackgroundColor;
-    }
-    
     // Set up badge
     //
     self.badgeLabel.hidden = !self.item.badge;
@@ -174,7 +172,7 @@
 {
     self.backgroundView.backgroundColor = self.item.highlightedBackgroundColor == nil ? self.menu.highlightedBackgroundColor : self.item.highlightedBackgroundColor;
     self.separatorView.backgroundColor = self.item.highlightedSeparatorColor == nil ? self.menu.highlightedSeparatorColor : self.item.highlightedSeparatorColor;
-    self.imageView.image = self.item.highlightedImage ? self.item.highlightedImage : self.item.image;
+    self.imageView.image = self.item.higlightedImage ? self.item.higlightedImage : self.item.image;
     if ([self.imageView respondsToSelector:@selector(setTintColor:)]) {
         self.imageView.tintColor = self.menu.highlightedImageTintColor;
     }
